@@ -7,13 +7,18 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.Security.Cryptography.X509Certificates;
+using System.IO;
 
 namespace WebApplication2
 {
     public class Startup
     {
+        private readonly IHostingEnvironment _environment;
         public Startup(IHostingEnvironment env)
         {
+            _environment = env;
+
             var builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
@@ -27,6 +32,14 @@ namespace WebApplication2
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            var cert = new X509Certificate2(Path.Combine(_environment.ContentRootPath, "idsvr3test.pfx"), "idsrv3test");
+
+            var builder = services.AddIdentityServer()
+                .SetSigningCredential(cert)
+                .AddInMemoryStores()
+                .AddInMemoryClients(Clients.Get())
+                .AddInMemoryScopes(Scopes.Get())
+                .AddInMemoryUsers(Users.Get());
             // Add framework services.
             services.AddMvc();
         }
@@ -46,6 +59,8 @@ namespace WebApplication2
             {
                 app.UseExceptionHandler("/Home/Error");
             }
+
+            app.UseIdentityServer();
 
             app.UseStaticFiles();
 
